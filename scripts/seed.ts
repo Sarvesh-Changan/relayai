@@ -1,6 +1,8 @@
-import { createAdminClient } from "@/lib/supabase/admin";
-import { env } from "@/lib/env";
+import { loadEnvConfig } from "@next/env";
+import type { createAdminClient } from "@/lib/supabase/admin-client";
 import type { DocCategory, Json, ProfileRow, TaskPriority, TaskStatus } from "@/types/db";
+
+loadEnvConfig(process.cwd());
 
 const seedUsers = [
   { name: "Aisha Khan", email: "aisha.khan@relayai.demo", role: "manager" as const },
@@ -15,8 +17,7 @@ function required<T>(value: T | null, error: { message: string } | null): T {
   return value;
 }
 
-async function ensureUsers(client: ReturnType<typeof createAdminClient>): Promise<Map<string, ProfileRow>> {
-  if (!env.SEED_PASSWORD) throw new Error("SEED_PASSWORD is required to seed demo accounts.");
+async function ensureUsers(client: ReturnType<typeof createAdminClient>, password: string): Promise<Map<string, ProfileRow>> {
   const existingUsers = new Map<string, string>();
   for (let page = 1; ; page += 1) {
     const { data, error } = await client.auth.admin.listUsers({ page, perPage: 1000 });
@@ -29,8 +30,8 @@ async function ensureUsers(client: ReturnType<typeof createAdminClient>): Promis
   for (const user of seedUsers) {
     const id = existingUsers.get(user.email.toLowerCase());
     const result = id
-      ? await client.auth.admin.updateUserById(id, { password: env.SEED_PASSWORD, email_confirm: true, user_metadata: { name: user.name } })
-      : await client.auth.admin.createUser({ email: user.email, password: env.SEED_PASSWORD, email_confirm: true, user_metadata: { name: user.name } });
+      ? await client.auth.admin.updateUserById(id, { password, email_confirm: true, user_metadata: { name: user.name } })
+      : await client.auth.admin.createUser({ email: user.email, password, email_confirm: true, user_metadata: { name: user.name } });
     if (result.error) throw new Error(`Could not ensure ${user.name}: ${result.error.message}`);
 
     const { data, error } = await client.from("profiles").upsert({
@@ -156,8 +157,13 @@ async function ensureKnowledge(client: ReturnType<typeof createAdminClient>, upl
 }
 
 async function seed(): Promise<void> {
+  const [{ createAdminClient }, { env }] = await Promise.all([
+    import("@/lib/supabase/admin-client"),
+    import("@/lib/env"),
+  ]);
+  if (!env.SEED_PASSWORD) throw new Error("SEED_PASSWORD is required to seed demo accounts.");
   const client = createAdminClient();
-  const profiles = await ensureUsers(client);
+  const profiles = await ensureUsers(client, env.SEED_PASSWORD);
   const aisha = profiles.get("Aisha Khan");
   const rahul = profiles.get("Rahul Sharma");
   const priya = profiles.get("Priya Nair");
