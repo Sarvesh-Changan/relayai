@@ -33,9 +33,23 @@ export const EnvSchema = z.object({
 export type Env = z.infer<typeof EnvSchema>;
 
 export function parseEnv(input: Record<string, string | undefined> = process.env): Env {
+  const normalized = { ...input };
+  const optionalNames = [
+    "GEMINI_API_KEY",
+    "AI_TIMEOUT_MS",
+    "AI_RATE_LIMIT_PER_MIN",
+    "APP_TIMEZONE",
+    "LOG_LEVEL",
+    "LOG_TO_FILE",
+    "NEXT_PUBLIC_DEMO_HINTS",
+    "SEED_PASSWORD",
+  ];
+  optionalNames.forEach((name) => {
+    if (normalized[name]?.trim() === "") normalized[name] = undefined;
+  });
   const normalizedInput = {
-    ...input,
-    LOG_TO_FILE: input.LOG_TO_FILE ?? (input.NODE_ENV === "production" ? "false" : "true"),
+    ...normalized,
+    LOG_TO_FILE: normalized.LOG_TO_FILE ?? (input.NODE_ENV === "production" ? "false" : "true"),
   };
   const result = EnvSchema.safeParse(normalizedInput);
   if (result.success) return result.data;
