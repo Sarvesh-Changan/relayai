@@ -1,5 +1,6 @@
-import { PlaceholderPage } from "@/app/(app)/PlaceholderPage";
+import { MeetingForm } from "@/app/(app)/meetings/new/MeetingForm";
+import { env } from "@/lib/env";
 
 export default function NewMeetingPage() {
-  return <PlaceholderPage title="New meeting" description="Capture meeting notes and review outcomes." />;
+  return <MeetingForm demoHints={env.NEXT_PUBLIC_DEMO_HINTS} />;
 }

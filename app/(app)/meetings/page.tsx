@@ -1,5 +1,5 @@
-import { PlaceholderPage } from "@/app/(app)/PlaceholderPage";
+import { MeetingsList } from "@/app/(app)/meetings/MeetingsList";
 
 export default function MeetingsPage() {
-  return <PlaceholderPage title="Meetings" description="Meeting notes and decisions for your workspace." />;
+  return <MeetingsList />;
 }
